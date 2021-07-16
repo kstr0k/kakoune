@@ -83,8 +83,8 @@ rm -rf logs; mkdir -p logs logs/extra
 export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir/util/udate | head -1) +%s%N"
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
-PATH=/usr/local/bin:$PATH
-KKRUNCMD="$MYDIR"/kakcmd; export KAKCMD
+PATH=$MYDIR:$PATH
+KKRUNCMD=kakrun; export KKRUNCMD
 cat >"$KKRUNCMD" <<'EOF'
 #!/bin/sh
 KAKOUNE_POSIX_SHELL=$KKPSH kak -ui json -e quit
