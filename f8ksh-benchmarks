@@ -63,12 +63,14 @@ local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
 ! $_O_setup_shells || setup_shells
 static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs
-export F8KSH_FAKESH_DATE="$_O_f8ksh_dir/util/udate +%s%N"
+export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir/util/udate | head -1) +%s%N"
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$mydir/logs"
 PATH=/usr/local/bin:$PATH
 CMD=kak\ -ui\ json\ -e\ \'quit\'
 pwd
+
+(benchmark_kak)
 
 benchmark KAKOUNE_POSIX_SHELL="$_O_f8ksh_dir/fakesh.sh" PPATH=
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
@@ -79,12 +81,18 @@ F8KSH_FAKESH_DATE='date +%s%N' \
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE='date +%s%N' \
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
+}
 
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/binsh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PPATH=/tmp/bboxsh/links
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/sh PPATH=
+benchmark_kak() {
+set --; while IFS= read -r ll; do set -- "$@" "$ll"; done <<EOF
+KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/binsh $CMD
+KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $CMD
+KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh $CMD
+KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/sh $CMD
+KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/sh $CMD
+EOF
+hyperfine -w 2 -r $_O_runs -S $static_sh \
+  --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
 }
 
 __parse_args "$@"
