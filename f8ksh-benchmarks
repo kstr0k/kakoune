@@ -97,6 +97,6 @@ hyperfine -w 2 -r $_O_runs -S $static_sh \
 
 __parse_args "$@"
 
-#find logs -name 'cmdlog*.log' -not -name '*fakesh*' -exec cat {} +
-#(for f in logs/*.sqlite3; do printf '\n%s\n' "$f"; sqlite3 "$f" '.mode line' 'SELECT tdelta_total / 1000000.0 as dt from cmd_stat order by dt desc limit 1'; done)
+#vd logs/kak_startup.json
+#(for f in logs/*.sqlite3; do printf '%s\t%s\n' "$f" "$(sqlite3 "$f" '.mode line' 'SELECT tdelta_avg / 1000000.0 as dt from cmd_stat order by dt desc limit 1')"; done) 2>/dev/null | sed -e 's/^ \+//' | vd
 #(cd; export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh; export code=$(cat "$_kkpsh"; echo X); code=${code%X}; cmd=' for i in $(seq 2); do plug_list; done'; cmd1='. "$_kkpsh" --'; cmd2='eval "$code"'; cmd3="eval $cmd1"; cmd4='eval "__wrap() { $code }"; __wrap'; cmd5='t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"'; hyperfine -r 50 -w 2 -S static-sh "$cmd1;$cmd" "$cmd2;$cmd" "$cmd3;$cmd" "$cmd4;$cmd" "$cmd5;$cmd")
