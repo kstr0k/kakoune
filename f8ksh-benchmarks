@@ -9,7 +9,7 @@ benchmark() {
   local "$@"
   rm -f /tmp/fakesh.log
 
-  local cmdlog; cmdlog=$(logcmdname --fmt='cmdlog-$CMD' -- hyperfine -w 2 -r $_O_runs -s basic \
+  local cmdlog; cmdlog=$("$_O_f8ksh_dir"/util/logcmdname --fmt='cmdlog-$CMD' -- hyperfine -w 2 -r $_O_runs -s basic \
     "KAKOUNE_POSIX_SHELL=\"$KAKOUNE_POSIX_SHELL\" PATH=\"${PPATH:+$PPATH:}/usr/local/bin:/bin\" $CMD")
   sed -i -e '1s@\&>.*@@' "$cmdlog"
   mv "$cmdlog" logs/
