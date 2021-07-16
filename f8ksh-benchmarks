@@ -58,6 +58,23 @@ __parse_args() {
 }
 __process_arg() { false; }
 
+benchmark_sh_source() (
+  cd
+  export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh
+  export code=$(cat "$_kkpsh"; echo X)
+  code=${code%X}
+  local cmd=  #; cmd='for i in $(seq 2); do plug_list; done'
+  set --; while IFS= read -r ll; do set -- "$@" "$ll; $cmd"; done <<'EOF'
+. "$_kkpsh" --
+eval . "$_kkpsh" --
+eval "$code"
+eval "__wrap() { $code }"; __wrap
+t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"
+EOF
+  hyperfine -r 100 -w 2 -S sh "$@"
+  hyperfine -r 100 -w 2 -S "$static_sh" "$@"
+)
+
 __main() {
 local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
 ! $_O_setup_shells || setup_shells
@@ -70,7 +87,8 @@ PATH=/usr/local/bin:$PATH
 CMD=kak\ -ui\ json\ -e\ \'quit\'
 pwd
 
-(benchmark_kak)
+benchmark_sh_source
+benchmark_kak
 
 benchmark KAKOUNE_POSIX_SHELL="$_O_f8ksh_dir/fakesh.sh" PPATH=
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
@@ -83,7 +101,7 @@ F8KSH_FAKESH_DATE='date +%s%N' \
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 }
 
-benchmark_kak() {
+benchmark_kak() (
 set --; while IFS= read -r ll; do set -- "$@" "$ll"; done <<EOF
 KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/binsh $CMD
 KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $CMD
@@ -93,10 +111,9 @@ KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/sh $CMD
 EOF
 hyperfine -w 2 -r $_O_runs -S $static_sh \
   --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
-}
+)
 
 __parse_args "$@"
 
 #vd logs/kak_startup.json
 #(for f in logs/*.sqlite3; do printf '%s\t%s\n' "$f" "$(sqlite3 "$f" '.mode line' 'SELECT tdelta_avg / 1000000.0 as dt from cmd_stat order by dt desc limit 1')"; done) 2>/dev/null | sed -e 's/^ \+//' | vd
-#(cd; export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh; export code=$(cat "$_kkpsh"; echo X); code=${code%X}; cmd=' for i in $(seq 2); do plug_list; done'; cmd1='. "$_kkpsh" --'; cmd2='eval "$code"'; cmd3="eval $cmd1"; cmd4='eval "__wrap() { $code }"; __wrap'; cmd5='t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"'; hyperfine -r 50 -w 2 -S static-sh "$cmd1;$cmd" "$cmd2;$cmd" "$cmd3;$cmd" "$cmd4;$cmd" "$cmd5;$cmd")
