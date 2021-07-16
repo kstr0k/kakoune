@@ -12,19 +12,20 @@ benchmark() {
   local cmdlog; cmdlog=$("$_O_f8ksh_dir"/util/logcmdname --fmt='cmdlog-$CMD' -- hyperfine -w 2 -r $_O_runs -s basic \
     "KAKOUNE_POSIX_SHELL=\"$KAKOUNE_POSIX_SHELL\" PATH=\"${PPATH:+$PPATH:}\$PATH\" $CMD")
   sed -i -e '1s@\&>.*@@' "$cmdlog"
-  mv "$cmdlog" logs/
+  mv "$cmdlog" logs/extra
   test -r /tmp/fakesh.log || return 0
   ls -al /tmp/fakesh.log
-  local log=logs/"$(s=${KAKOUNE_POSIX_SHELL%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
+  local log=logs/extra/"$(s=${KAKOUNE_POSIX_SHELL%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
   mv /tmp/fakesh.log "$log"
-  $static_sh ~/Projects/f8ksh/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "${log%.log}.sqlite3"
+  local db; db=logs/${log##*/}; db=${db%.log}.sqlite3
+  $static_sh ~/Projects/f8ksh/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
   zstd --rm "$log" || gzip "$log" || :
 }
 
 setup_shells() {
   MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
   MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
-# "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/-deb
+# "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/deb-static
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
 }
 
@@ -71,15 +72,15 @@ eval "$code"
 eval "__wrap() { $code }"; __wrap
 t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"
 EOF
-  hyperfine -r 100 -w 2 -S sh "$@"
-  hyperfine -r 100 -w 2 -S "$static_sh" "$@"
+  hyperfine -r 100 -w 2 -S sh --export-markdown "$mydir"/logs/sh-load-code.md "$@"
+  hyperfine -r 100 -w 2 -S "$static_sh" --export-markdown "$mydir"/logs/static_sh-load_code.md "$@"
 )
 
 __main() {
 local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
 ! $_O_setup_shells || setup_shells
 static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
-rm -rf logs; mkdir -p logs
+rm -rf logs; mkdir -p logs logs/extra
 export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir/util/udate | head -1) +%s%N"
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$mydir/logs"
