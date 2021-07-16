@@ -10,12 +10,12 @@ benchmark() {
   rm -f /tmp/fakesh.log
 
   local cmdlog; cmdlog=$("$_O_f8ksh_dir"/util/logcmdname --fmt='cmdlog-$CMD' -- hyperfine -w 2 -r $_O_runs -s basic \
-    "KAKOUNE_POSIX_SHELL=\"$KAKOUNE_POSIX_SHELL\" PATH=\"${PPATH:+$PPATH:}\$PATH\" $CMD")
+    "KKPSH=\"$KKPSH\" PATH=\"${PPATH:+$PPATH:}\$PATH\" $KKRUNCMD")
   sed -i -e '1s@\&>.*@@' "$cmdlog"
   mv "$cmdlog" logs/extra
   test -r /tmp/fakesh.log || return 0
   ls -al /tmp/fakesh.log
-  local log; log=logs/extra/"$(s=${KAKOUNE_POSIX_SHELL%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
+  local log; log=logs/extra/"$(s=${KKPSH%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
   mv /tmp/fakesh.log "$log"
   local db; db=logs/${log##*/}; db=${db%.log}.sqlite3
   $_G_static_sh ~/Projects/f8ksh/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
@@ -84,30 +84,35 @@ export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
 PATH=/usr/local/bin:$PATH
-CMD=kak\ -ui\ json\ -e\ \'quit\'
+KKRUNCMD="$MYDIR"/kakcmd; export KAKCMD
+cat >"$KKRUNCMD" <<'EOF'
+#!/bin/sh
+KAKOUNE_POSIX_SHELL=$KKPSH kak -ui json -e quit
+EOF
+chmod +x "$KKRUNCMD"
 pwd
 
 benchmark_sh_source
 benchmark_kak
 
-benchmark KAKOUNE_POSIX_SHELL="$_O_f8ksh_dir/fakesh.sh" PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/fakesh.sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/fakesh.sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH=
+benchmark KKPSH="$_O_f8ksh_dir/fakesh.sh" PPATH=
+benchmark KKPSH=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
+benchmark KKPSH=/tmp/bboxsh/links/fakesh.sh PPATH=
+benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH=
+benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH=
 F8KSH_FAKESH_DATE='date +%s%N' \
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
+benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE='date +%s%N' \
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
+benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 }
 
 benchmark_kak() (
 set --; while IFS= read -r ll; do set -- "$@" "$ll"; done <<EOF
-KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/binsh $CMD
-KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $CMD
-KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh $CMD
-KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/sh $CMD
-KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/sh $CMD
+KKPSH=/tmp/bboxsh/builtin/binsh $KKRUNCMD
+KKPSH=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $KKRUNCMD
+KKPSH=/tmp/bboxsh/links/sh $KKRUNCMD
+KKPSH=/tmp/bboxsh/builtin/sh $KKRUNCMD
+KKPSH=/tmp/bboxsh/builtin+nofork/sh $KKRUNCMD
 EOF
 hyperfine -w 2 -r $_O_runs -S $_G_static_sh \
   --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
