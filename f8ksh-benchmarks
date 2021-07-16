@@ -89,5 +89,5 @@ benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin+nofork/sh PPATH=
 __parse_args "$@"
 
 #find logs -name 'cmdlog*.log' -not -name '*fakesh*' -exec cat {} +
-#for f in logs/*.sqlite3; do printf '\n%s\n' "$f"; sqlite3 "$f" '.mode line' 'SELECT tdelta_total from cmd_stat order by tdelta_total desc limit 1'; done
-#(export code=$(cat ~/.kak/plugins/plug.kak/rc/plug.sh; echo X); code=${code%X}; cmd1=$(/bin/printf '%q ' . /home/user1000/.kak/plugins/plug.kak/rc/plug.sh --); cmd2='eval "$code"'; cmd3="eval $cmd1"; cmd4='eval "__wrap() { $code }"; : __wrap'; cmd5='t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"'; printf '%s\n' "$cmd1" "$cmd2" "$cmd3" "$cmd4"; hyperfine -r 300 -w 2 -S static-sh "$cmd1" "$cmd2" "$cmd3" "$cmd4" "$cmd5")
+#(for f in logs/*.sqlite3; do printf '\n%s\n' "$f"; sqlite3 "$f" '.mode line' 'SELECT tdelta_total / 1000000.0 as dt from cmd_stat order by dt desc limit 1'; done)
+#(cd; export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh; export code=$(cat "$_kkpsh"; echo X); code=${code%X}; cmd=' for i in $(seq 2); do plug_list; done'; cmd1='. "$_kkpsh" --'; cmd2='eval "$code"'; cmd3="eval $cmd1"; cmd4='eval "__wrap() { $code }"; __wrap'; cmd5='t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"'; hyperfine -r 50 -w 2 -S static-sh "$cmd1;$cmd" "$cmd2;$cmd" "$cmd3;$cmd" "$cmd4;$cmd" "$cmd5;$cmd")
