@@ -61,7 +61,7 @@ __process_arg() { false; }
 __main() {
 local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
 ! $_O_setup_shells || setup_shells
-static_sh=$(which /tmp/bbox-builtin+nofork/sh static-sh dash 2>/dev/null | head -1)
+static_sh=$(which /tmp/bbox-builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs
 export F8KSH_FAKESH_DATE="$_O_f8ksh_dir/util/udate +%s%N"
 export F8KSH_FAKESH_DEBUG=true
@@ -79,7 +79,7 @@ benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE='date +%s%N' \
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 
-benchmark KAKOUNE_POSIX_SHELL="$(which dash)" PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/binsh PPATH=
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox+ln/sh PPATH=/tmp/bbox+ln
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox+ln/sh PPATH=
 benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/sh PPATH=
