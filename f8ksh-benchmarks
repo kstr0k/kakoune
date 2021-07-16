@@ -15,10 +15,10 @@ benchmark() {
   mv "$cmdlog" logs/extra
   test -r /tmp/fakesh.log || return 0
   ls -al /tmp/fakesh.log
-  local log=logs/extra/"$(s=${KAKOUNE_POSIX_SHELL%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
+  local log; log=logs/extra/"$(s=${KAKOUNE_POSIX_SHELL%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
   mv /tmp/fakesh.log "$log"
   local db; db=logs/${log##*/}; db=${db%.log}.sqlite3
-  $static_sh ~/Projects/f8ksh/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
+  $_G_static_sh ~/Projects/f8ksh/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
   zstd --rm "$log" || gzip "$log" || :
 }
 
@@ -64,7 +64,7 @@ benchmark_sh_source() (
   export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh
   export code=$(cat "$_kkpsh"; echo X)
   code=${code%X}
-  local cmd=  #; cmd='for i in $(seq 2); do plug_list; done'
+  local ll cmd=  #; cmd='for i in $(seq 2); do plug_list; done'
   set --; while IFS= read -r ll; do set -- "$@" "$ll; $cmd"; done <<'EOF'
 . "$_kkpsh" --
 eval . "$_kkpsh" --
@@ -73,13 +73,13 @@ eval "__wrap() { $code }"; __wrap
 t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"
 EOF
   hyperfine -r 100 -w 2 -S sh --export-markdown "$mydir"/logs/sh-load-code.md "$@"
-  hyperfine -r 100 -w 2 -S "$static_sh" --export-markdown "$mydir"/logs/static_sh-load_code.md "$@"
+  hyperfine -r 100 -w 2 -S "$_G_static_sh" --export-markdown "$mydir"/logs/static_sh-load_code.md "$@"
 )
 
 __main() {
 local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
 ! $_O_setup_shells || setup_shells
-static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
+_G_static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs logs/extra
 export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir/util/udate | head -1) +%s%N"
 export F8KSH_FAKESH_DEBUG=true
@@ -110,7 +110,7 @@ KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh $CMD
 KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/sh $CMD
 KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/sh $CMD
 EOF
-hyperfine -w 2 -r $_O_runs -S $static_sh \
+hyperfine -w 2 -r $_O_runs -S $_G_static_sh \
   --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
 )
 
