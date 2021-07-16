@@ -72,18 +72,18 @@ eval "$code"
 eval "__wrap() { $code }"; __wrap
 t=$(mktemp); echo "$code" >"$t"; . "$t"; rm -f "$t"
 EOF
-  hyperfine -r 100 -w 2 -S sh --export-markdown "$mydir"/logs/sh-load-code.md "$@"
-  hyperfine -r 100 -w 2 -S "$_G_static_sh" --export-markdown "$mydir"/logs/static_sh-load_code.md "$@"
+  hyperfine -r 100 -w 2 -S sh --export-markdown "$MYDIR"/logs/sh-load-code.md "$@"
+  hyperfine -r 100 -w 2 -S "$_G_static_sh" --export-markdown "$MYDIR"/logs/static_sh-load_code.md "$@"
 )
 
 __main() {
-local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
+local MYDIR; MYDIR=${0%/*}; cd -P "${MYDIR:-/}"; MYDIR=$PWD;
 ! $_O_setup_shells || setup_shells
 _G_static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs logs/extra
 export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir/util/udate | head -1) +%s%N"
 export F8KSH_FAKESH_DEBUG=true
-#export F8KSH_FAKESH_LOGDIR="$mydir/logs"
+#export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
 PATH=/usr/local/bin:$PATH
 CMD=kak\ -ui\ json\ -e\ \'quit\'
 pwd
