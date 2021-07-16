@@ -22,10 +22,10 @@ benchmark() {
 }
 
 setup_shells() {
-  MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bbox-builtin+nofork
-  MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bbox-builtin
-# "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bbox-deb
-  "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bbox+ln
+  MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
+  MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
+# "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/-deb
+  "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
 }
 
 # adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
@@ -61,7 +61,7 @@ __process_arg() { false; }
 __main() {
 local mydir; mydir=${0%/*}; cd -P "${mydir:-/}"; mydir=$PWD;
 ! $_O_setup_shells || setup_shells
-static_sh=$(which /tmp/bbox-builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
+static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs
 export F8KSH_FAKESH_DATE="$_O_f8ksh_dir/util/udate +%s%N"
 export F8KSH_FAKESH_DEBUG=true
@@ -71,20 +71,20 @@ CMD=kak\ -ui\ json\ -e\ \'quit\'
 pwd
 
 benchmark KAKOUNE_POSIX_SHELL="$_O_f8ksh_dir/fakesh.sh" PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox+ln/fakesh.sh PPATH=/tmp/bbox+ln
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox+ln/fakesh.sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/fakesh.sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin+nofork/fakesh.sh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/fakesh.sh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/fakesh.sh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH=
 F8KSH_FAKESH_DATE='date +%s%N' \
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/fakesh.sh PPATH= BMSFX=BBDATE
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE='date +%s%N' \
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/binsh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox+ln/sh PPATH=/tmp/bbox+ln
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox+ln/sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin/sh PPATH=
-benchmark KAKOUNE_POSIX_SHELL=/tmp/bbox-builtin+nofork/sh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/binsh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PPATH=/tmp/bboxsh/links
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/links/sh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin/sh PPATH=
+benchmark KAKOUNE_POSIX_SHELL=/tmp/bboxsh/builtin+nofork/sh PPATH=
 }
 
 __parse_args "$@"
