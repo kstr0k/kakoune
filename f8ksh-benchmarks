@@ -62,8 +62,7 @@ __process_arg() { false; }
 benchmark_sh_source() (
   cd
   export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh
-  export code=$(cat "$_kkpsh"; echo X)
-  code=${code%X}
+  code=$(cat "$_kkpsh"; echo X); code=${code%X}; export code
   local ll cmd=  #; cmd='for i in $(seq 2); do plug_list; done'
   set --; while IFS= read -r ll; do set -- "$@" "$ll; $cmd"; done <<'EOF'
 . "$_kkpsh" --
