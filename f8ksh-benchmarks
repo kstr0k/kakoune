@@ -32,7 +32,7 @@ setup_shells() {
 # adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
 __usage() {  # args: header footer
   local flags
-  flags=$(set | sed -ne 's/^_O_\([^=]\+\)=.*/\1/p')
+  flags=$(set | sed -ne 's/^_O_\([^=]*\)=.*/\1/p')
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf -- '--%s=ARG\n'  $(printf '%s'  "$flags" | sed -e 's/_/-/g')
   printf '%s'${2:+'\n'}  "${2:-}"
@@ -57,7 +57,7 @@ __parse_args() {
   fi
   shift; __parse_args "$@"
 }
-__process_arg() { false; }
+__process_arg() { return 1; }
 
 benchmark_sh_source() (
   cd
