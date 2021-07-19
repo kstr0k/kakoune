@@ -11,14 +11,13 @@ benchmark() {
 
   local cmdlog; cmdlog=$("$_O_f8ksh_dir"/util/logcmdname --fmt='cmdlog-$CMD' -- hyperfine -w 2 -r $_O_runs -s basic \
     "KKPSH=\"$KKPSH\" PATH=\"${PPATH:+$PPATH:}\$PATH\" $KKRUNCMD")
-  sed -i -e '1s@\&>.*@@' "$cmdlog"
   mv "$cmdlog" logs/extra
   test -r /tmp/fakesh.log || return 0
   ls -al /tmp/fakesh.log
   local log; log=logs/extra/"$(s=${KKPSH%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
   mv /tmp/fakesh.log "$log"
   local db; db=logs/${log##*/}; db=${db%.log}.sqlite3
-  $_G_static_sh ~/Projects/f8ksh/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
+  $_G_static_sh "$_O_f8ksh_dir"/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
   zstd --rm "$log" || gzip "$log" || :
 }
 
@@ -80,14 +79,17 @@ local MYDIR; MYDIR=${0%/*}; cd -P "${MYDIR:-/}"; MYDIR=$PWD;
 ! $_O_setup_shells || setup_shells
 _G_static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs logs/extra
-export F8KSH_FAKESH_DATE="$(which /tmp/bboxsh/builtin+nofork/udate $_O_f8ksh_dir/util/udate | head -1) +%s%N"
+cp "$_O_f8ksh_dir"/util/udate.c .
+CFLAGS='-static -O3 -march=native -Wall' make udate; strip udate
+export F8KSH_FAKESH_DATE=/tmp/bboxsh/builtin+nofork/udate
+cp udate "$F8KSH_FAKESH_DATE"
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
 PATH=$MYDIR:$PATH
 KKRUNCMD=kakrun; export KKRUNCMD
 cat >"$KKRUNCMD" <<'EOF'
 #!/bin/sh
-KAKOUNE_POSIX_SHELL=$KKPSH kak -ui json -e quit
+KAKOUNE_POSIX_SHELL=$KKPSH exec kak -ui json -e quit
 EOF
 chmod +x "$KKRUNCMD"
 pwd
@@ -121,4 +123,4 @@ hyperfine -w 2 -r $_O_runs -S $_G_static_sh \
 __parse_args "$@"
 
 #vd logs/kak_startup.json
-#(for f in logs/*.sqlite3; do printf '%s\t%s\n' "$f" "$(sqlite3 "$f" '.mode line' 'SELECT tdelta_avg / 1000000.0 as dt from cmd_stat order by dt desc limit 1')"; done) 2>/dev/null | sed -e 's/^ \+//' | vd
+#(for f in logs/*.sqlite3; do printf '%s\t%s\n' "$f" "$(sqlite3 "$f" '.mode line' 'SELECT tdelta_avg / 1000000.0 as dt from cmd_stat order by dt desc limit 1')"; done) 2>/dev/null | sed -e 's/^  *//' | vd
