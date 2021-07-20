@@ -4,6 +4,7 @@ set -e; set -u
 _O_busybox_src=$HOME/src/busybox
 _O_f8ksh_dir=$HOME/src/f8ksh
 _O_setup_shells=true _O_runs=48
+_O_kak=$(which kak)
 
 benchmark() {
   local "$@"
@@ -86,10 +87,11 @@ cp udate "$F8KSH_FAKESH_DATE"
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
 PATH=$MYDIR:$PATH
+KKBIN=$_O_kak; export KKBIN
 KKRUNCMD=kakrun; export KKRUNCMD
 cat >"$KKRUNCMD" <<'EOF'
 #!/bin/sh
-KAKOUNE_POSIX_SHELL=$KKPSH exec kak -ui json -e quit
+KAKOUNE_POSIX_SHELL=$KKPSH exec "$KKBIN" -ui json -e quit
 EOF
 chmod +x "$KKRUNCMD"
 pwd
