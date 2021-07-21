@@ -18,16 +18,18 @@ benchmark() {
   local log; log=logs/extra/"$(s=${KKPSH%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
   mv /tmp/fakesh.log "$log"
   local db; db=logs/${log##*/}; db=${db%.log}.sqlite3
-  $_G_static_sh "$_O_f8ksh_dir"/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
+  time $_G_static_sh "$_O_f8ksh_dir"/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
   zstd --rm "$log" || gzip "$log" || :
 }
 
-setup_shells() {
-  MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
-  MAKEFLAGS=-j8 "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
+setup_shells() (
+  : "{MAKEFLAGS:=-j8}"
+  "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
+  "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
+  "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --no-busybox-config-static /tmp/bboxsh/builtin+dynld
 # "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/deb-static
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
-}
+)
 
 # adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
 __usage() {  # args: header footer
@@ -107,6 +109,7 @@ benchmark KKPSH=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
 benchmark KKPSH=/tmp/bboxsh/links/fakesh.sh PPATH=
 benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH=
 benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH=
+benchmark KKPSH=/tmp/bboxsh/builtin+dynld/fakesh.sh PPATH=
 F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE= \
@@ -120,6 +123,7 @@ KKPSH=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $KKRUNCMD
 KKPSH=/tmp/bboxsh/links/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin+nofork/sh $KKRUNCMD
+KKPSH=/tmp/bboxsh/builtin+dynld/sh $KKRUNCMD
 EOF
 hyperfine -w 2 -r $_O_runs -S $_G_static_sh \
   --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
