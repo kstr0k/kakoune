@@ -80,12 +80,14 @@ local MYDIR; MYDIR=${0%/*}; cd -P "${MYDIR:-/}"; MYDIR=$PWD;
 ! $_O_setup_shells || setup_shells
 _G_static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs logs/extra
+
 cp "$_O_f8ksh_dir"/util/udate.c .
 CFLAGS='-static -O3 -march=native -Wall' make udate; strip udate
 export F8KSH_FAKESH_DATE=/tmp/bboxsh/builtin+nofork/udate
 cp udate "$F8KSH_FAKESH_DATE"
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
+
 PATH=$MYDIR:$PATH
 KKBIN=$_O_kak; export KKBIN
 KKRUNCMD=kakrun; export KKRUNCMD
@@ -99,14 +101,15 @@ pwd
 benchmark_sh_source
 benchmark_kak
 
+# busybox=make has EPOCHREALTIME and fakesh uses it automatically
 benchmark KKPSH="$_O_f8ksh_dir/fakesh.sh" PPATH=
 benchmark KKPSH=/tmp/bboxsh/links/fakesh.sh PPATH=/tmp/bboxsh/links
 benchmark KKPSH=/tmp/bboxsh/links/fakesh.sh PPATH=
 benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH=
 benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH=
-F8KSH_FAKESH_DATE='date +%s%N' \
+F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
-F8KSH_FAKESH_DATE='date +%s%N' \
+F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 }
 
