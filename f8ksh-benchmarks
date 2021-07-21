@@ -3,7 +3,7 @@ set -e; set -u
 
 _O_busybox_src=$HOME/src/busybox
 _O_f8ksh_dir=$HOME/src/f8ksh
-_O_setup_shells=true _O_runs=48
+_O_setup_shells=true _O_runs=48 _O_date=udate
 _O_kak=$(which kak)
 
 benchmark() {
@@ -77,16 +77,47 @@ EOF
   hyperfine -r 100 -w 2 -S "$_G_static_sh" --export-markdown "$MYDIR"/logs/static_sh-load_code.md "$@"
 )
 
+__setup_date() {
+  _G_srv_pid=
+  _G_srv_fifo=/tmp/bm-nsecsrv
+  case "$_O_date" in
+    udate)
+      cp "$_O_f8ksh_dir"/util/udate.c .
+      CFLAGS='-static -O3 -march=native -Wall' make udate; strip udate
+      F8KSH_FAKESH_DATE=/tmp/bboxsh/builtin+nofork/udate
+      cp udate "$F8KSH_FAKESH_DATE"
+      ;;
+    fifosrv)
+      /tmp/bboxsh/builtin+nofork/busybox sh "$_O_f8ksh_dir"/util/fifo-srv.sh "$_G_srv_fifo" </dev/null >"$_G_srv_fifo".log 2>&1 &
+      _G_srv_pid=$!
+      F8KSH_FAKESH_DATE='head -1 <'"$_G_srv_fifo"
+      ;;
+    sysdate)
+      F8KSH_FAKESH_DATE="$(exec 2>/dev/null; which gdate || which date) +%s%N"
+      ;;
+    date) F8KSH_FAKESH_DATE='date +%s%N' ;;  # not on alpine busybox (strips %N)
+    *)    F8KSH_FAKESH_DATE="$_O_date"   ;;  # pass thru
+  esac
+  export F8KSH_FAKESH_DATE
+  echo 1>&2 "Using date command: $F8KSH_FAKESH_DATE"
+}
+
+__cleanup() {
+  if test -n "$_G_srv_pid"; then
+    touch "$_G_srv_fifo".quit || :
+    (printf '%s' 'Final tstamp'; eval "$F8KSH_FAKESH_DATE" || :)
+    sleep 1; kill "$_G_srv_pid" 2>/dev/null || :
+    rm -f "$_G_srv_fifo" "$_G_srv_fifo".quit
+  fi
+}
+
 __main() {
 local MYDIR; MYDIR=${0%/*}; cd -P "${MYDIR:-/}"; MYDIR=$PWD;
 ! $_O_setup_shells || setup_shells
 _G_static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
 rm -rf logs; mkdir -p logs logs/extra
 
-cp "$_O_f8ksh_dir"/util/udate.c .
-CFLAGS='-static -O3 -march=native -Wall' make udate; strip udate
-export F8KSH_FAKESH_DATE=/tmp/bboxsh/builtin+nofork/udate
-cp udate "$F8KSH_FAKESH_DATE"
+__setup_date
 export F8KSH_FAKESH_DEBUG=true
 #export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
 
@@ -114,6 +145,8 @@ F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
+
+__cleanup
 }
 
 benchmark_kak() (
