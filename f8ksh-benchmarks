@@ -28,6 +28,7 @@ setup_shells() (
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --no-busybox-config-static /tmp/bboxsh/builtin+dynld
 # "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/deb-static
+  # alpine has 1.33, no applet bias, strips date +%N (!!); use it for comparison instead of yet another =make
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
 )
 
@@ -91,12 +92,15 @@ __setup_date() {
       /tmp/bboxsh/builtin+nofork/busybox sh "$_O_f8ksh_dir"/util/fifo-srv.sh "$_G_srv_fifo" </dev/null >"$_G_srv_fifo".log 2>&1 &
       _G_srv_pid=$!
       F8KSH_FAKESH_DATE='head -1 <'"$_G_srv_fifo"
+      printf 'fifo-srv started at %s\n' $(eval "$F8KSH_FAKESH_DATE")
       ;;
     sysdate)
       F8KSH_FAKESH_DATE="$(exec 2>/dev/null; which gdate || which date) +%s%N"
       ;;
     date) F8KSH_FAKESH_DATE='date +%s%N' ;;  # not on alpine busybox (strips %N)
-    *)    F8KSH_FAKESH_DATE="$_O_date"   ;;  # pass thru
+    /*|*' '*|now=*)
+          F8KSH_FAKESH_DATE="$_O_date"   ;;  # pass thru
+    *) unset Bad; : ${Bad?--date="$_O_date", most likely} ;;
   esac
   export F8KSH_FAKESH_DATE
   echo 1>&2 "Using date command: $F8KSH_FAKESH_DATE"
