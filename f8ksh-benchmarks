@@ -23,13 +23,25 @@ benchmark() {
 }
 
 setup_shells() (
+  mkdir -p /tmp/bboxsh
   : "{MAKEFLAGS:=-j8}"
+
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --no-busybox-config-static /tmp/bboxsh/builtin+dynld
 # "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/deb-static
   # alpine has 1.33, no applet bias, strips date +%N (!!); use it for comparison instead of yet another =make
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
+
+  cat >/tmp/bboxsh/builtin/zsh-sh <<'EOF'
+#!/bin/sh
+exec zsh --emulate sh "$@"
+EOF
+  cat >/tmp/bboxsh/builtin/bash-sh <<'EOF'
+#!/bin/sh
+exec bash --posix "$@"
+EOF
+chmod a+x /tmp/bboxsh/*/*
 )
 
 # adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
@@ -154,14 +166,19 @@ __cleanup
 }
 
 benchmark_kak() (
-set --; while IFS= read -r ll; do set -- "$@" "$ll"; done <<EOF
+set --; while IFS= read -r ll; do
+  case "$ll" in '#'*) ;; *) set -- "$@" "$ll" ;; esac
+done <<EOF
 KKPSH=/tmp/bboxsh/builtin/binsh $KKRUNCMD
+#KKPSH=/tmp/bboxsh/builtin/zsh-sh $KKRUNCMD
+#KKPSH=/tmp/bboxsh/builtin/bash-sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $KKRUNCMD
 KKPSH=/tmp/bboxsh/links/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin+nofork/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin+dynld/sh $KKRUNCMD
 EOF
+#printf '%s' "$*"
 hyperfine -w 2 -r $_O_runs -S $_G_static_sh \
   --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
 )
