@@ -83,6 +83,7 @@ __process_arg() { return 1; }
 benchmark_sh_source() (
   cd
   export _kkpsh=.config/kak/plugins/plug.kak/rc/plug.sh
+  [ -r "$_kkpsh" ] || { echo 1>&2 "No $_kkpsh ; skipping benchmark" && return 0; }
   code=$(cat "$_kkpsh"; echo X); code=${code%X}; export code
   local ll cmd=  #; cmd='for i in $(seq 2); do plug_list; done'
   set --; while IFS= read -r ll; do set -- "$@" "$ll; $cmd"; done <<'EOF'
@@ -118,7 +119,7 @@ __setup_date() {
     date) F8KSH_FAKESH_DATE='date +%s%N' ;;  # not on alpine busybox (strips %N)
     /*|*' '*|now=*)
           F8KSH_FAKESH_DATE="$_O_date"   ;;  # pass thru
-    *) unset Bad; : ${Bad?--date="$_O_date", most likely} ;;
+    *) unset Bad && : ${Bad?--date="$_O_date", most likely} ;;
   esac
   export F8KSH_FAKESH_DATE
   echo 1>&2 "Using date command: $F8KSH_FAKESH_DATE"
@@ -139,10 +140,6 @@ local MYDIR; MYDIR=${0%/*}; cd -P "${MYDIR:-/}"; MYDIR=$PWD;
 _G_static_sh=$(__which1 /tmp/bboxsh/builtin+nofork/sh static-sh sh)
 rm -rf logs; mkdir -p logs logs/extra
 
-__setup_date
-export F8KSH_FAKESH_DEBUG=true
-#export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
-
 PATH=$MYDIR:$PATH
 KKBIN=$_O_kak; export KKBIN
 KKRUNCMD=kakrun; export KKRUNCMD
@@ -155,6 +152,16 @@ pwd
 
 benchmark_sh_source
 benchmark_kak
+benchmark_kak_f8ksh
+
+__cleanup
+}
+
+benchmark_kak_f8ksh() {
+[ -d "$_O_f8ksh_dir" ] || { echo 1>&2 "No $_O_f8ksh_dir ; skipping benchmark" && return 0; }
+__setup_date
+export F8KSH_FAKESH_DEBUG=true
+#export F8KSH_FAKESH_LOGDIR="$MYDIR/logs"
 
 # busybox=make has EPOCHREALTIME and fakesh uses it automatically
 benchmark KKPSH="$_O_f8ksh_dir/fakesh.sh" PPATH=
@@ -167,8 +174,6 @@ F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin/fakesh.sh PPATH= BMSFX=BBDATE
 F8KSH_FAKESH_DATE= \
 benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
-
-__cleanup
 }
 
 benchmark_kak() (
