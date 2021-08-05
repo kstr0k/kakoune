@@ -1,10 +1,16 @@
 #!/bin/sh
 set -e; set -u
 
+__which1() {
+  while [ $# -gt 0 ]; do  # TODO: alias
+    ! command -v "$1" 2>/dev/null || return 0; shift
+  done; return 1
+}
+
 _O_busybox_src=$HOME/src/busybox
 _O_f8ksh_dir=$HOME/src/f8ksh
 _O_setup_shells=true _O_runs=48 _O_date=udate
-_O_kak=$(which kak)
+_O_kak=$(__which1 kak)
 
 benchmark() {
   local "$@"
@@ -107,7 +113,7 @@ __setup_date() {
       printf 'fifo-srv started at %s\n' $(eval "$F8KSH_FAKESH_DATE")
       ;;
     sysdate)
-      F8KSH_FAKESH_DATE="$(exec 2>/dev/null; which gdate || which date) +%s%N"
+      F8KSH_FAKESH_DATE="$(exec 2>/dev/null; __which1 gdate date) +%s%N"
       ;;
     date) F8KSH_FAKESH_DATE='date +%s%N' ;;  # not on alpine busybox (strips %N)
     /*|*' '*|now=*)
@@ -130,7 +136,7 @@ __cleanup() {
 __main() {
 local MYDIR; MYDIR=${0%/*}; cd -P "${MYDIR:-/}"; MYDIR=$PWD;
 ! $_O_setup_shells || setup_shells
-_G_static_sh=$(which /tmp/bboxsh/builtin+nofork/sh static-sh sh 2>/dev/null | head -1)
+_G_static_sh=$(__which1 /tmp/bboxsh/builtin+nofork/sh static-sh sh)
 rm -rf logs; mkdir -p logs logs/extra
 
 __setup_date
