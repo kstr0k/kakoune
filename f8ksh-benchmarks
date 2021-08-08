@@ -32,11 +32,13 @@ setup_shells() (
   mkdir -p /tmp/bboxsh
   : "{MAKEFLAGS:=-j8}"
 
+  if [ "$_O_busybox_src" ]; then
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" /tmp/bboxsh/builtin
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --no-busybox-config-static /tmp/bboxsh/builtin+dynld
 # "$_O_f8ksh_dir"/setup-bbox --clear --busybox=debian /tmp/bboxsh/deb-static
   # alpine has 1.33, no applet bias, strips date +%N (!!); use it for comparison instead of yet another =make
+  fi
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
 
   cat >/tmp/bboxsh/builtin/zsh-sh <<'EOF'
@@ -179,7 +181,9 @@ benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 
 benchmark_kak() (
 set --; while IFS= read -r ll; do
-  case "$ll" in '#'*) ;; *) set -- "$@" "$ll" ;; esac
+  case "$ll" in '#'*) ;; *)
+    (eval "KKRUNCMD=; $ll; ! test -x \$KKPSH") || set -- "$@" "$ll" ;;
+  esac
 done <<EOF
 KKPSH=/tmp/bboxsh/builtin/binsh $KKRUNCMD
 #KKPSH=/tmp/bboxsh/builtin/zsh-sh $KKRUNCMD
