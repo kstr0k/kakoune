@@ -24,7 +24,7 @@ benchmark() {
   local log; log=logs/extra/"$(s=${KKPSH%/fakesh.sh}; echo "${s##*/}")${PPATH:+_PPATH}${BMSFX:+_$BMSFX}"_fakesh.log
   mv /tmp/fakesh.log "$log"
   local db; db=logs/${log##*/}; db=${db%.log}.sqlite3
-  time $_G_static_sh "$_O_f8ksh_dir"/fakesh-log-conv --logfunc=2sql <"$log" | sqlite3 "$db"
+  { time $_G_static_sh "$_O_f8ksh_dir"/fakesh-log-conv --logfunc=2sql <"$log"; } | sqlite3 "$db"
   zstd --rm "$log" || gzip "$log" || :
 }
 
@@ -52,10 +52,10 @@ chmod a+x /tmp/bboxsh/*/*
 
 # adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
 __usage() {  # args: header footer
-  local flags
-  flags=$(set | sed -ne 's/^_O_\([^=]*\)=.*/\1/p')
+  local flags; flags=$(
+    set | sed -n -e '/^_O_/!d;s/_/-/g;s/^-O-\([[:alnum:]-]*\)=.*/--\1=ARG/p')
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
-  test -z "$flags" || printf -- '--%s=ARG\n'  $(printf '%s'  "$flags" | sed -e 's/_/-/g')
+  test -z "$flags" || printf '%s\n' "$flags"
   printf '%s'${2:+'\n'}  "${2:-}"
 }
 __parse_args() {
@@ -65,10 +65,11 @@ __parse_args() {
     case "$1" in
       -v) set -x ;;
       -h|--help|--usage|-'?') __usage 'Options:'; exit 0 ;;
-      --*=*)
-        k=${1%%=*}; k=_O_$(echo "${k#--}" | sed -e 's/-/_/g')
-        eval "$k"'=$(printf "%sX"  "${1#--*=}");' "$k=\${$k%X}"
-        ;;
+      --*=*) k=${1%%=*}; k=_O_${k#--}-
+        while :; do case "$k" in
+          *-) k=${k%%-*}_${k#*-} ;;
+           *) eval "${k%_}=\${1#--*=}"; break ;;
+        esac; done ;;
       --exit) return 0 ;;
       --no-?*) k=$1; shift; __parse_args "--${k#--no-}=false" "$@"; return ;;
       --?*)    k=$1; shift; __parse_args "$k=true"            "$@"; return ;;
@@ -111,7 +112,7 @@ __setup_date() {
       /tmp/bboxsh/builtin+nofork/busybox sh "$_O_f8ksh_dir"/util/fifo-srv.sh "$_G_srv_fifo" </dev/null >"$_G_srv_fifo".log 2>&1 &
       _G_srv_pid=$!
       F8KSH_FAKESH_DATE='head -1 <'"$_G_srv_fifo"
-      printf 'fifo-srv started at %s\n' $(eval "$F8KSH_FAKESH_DATE")
+      printf 'fifo-srv started at %s\n' "$(eval "$F8KSH_FAKESH_DATE")"
       ;;
     sysdate)
       F8KSH_FAKESH_DATE="$(exec 2>/dev/null; __which1 gdate date) +%s%N"
@@ -119,7 +120,7 @@ __setup_date() {
     date) F8KSH_FAKESH_DATE='date +%s%N' ;;  # not on alpine busybox (strips %N)
     /*|*' '*|now=*)
           F8KSH_FAKESH_DATE="$_O_date"   ;;  # pass thru
-    *) unset Bad && : ${Bad?--date="$_O_date", most likely} ;;
+    *) unset Bad && : "${Bad?--date="$_O_date", most likely}" ;;
   esac
   export F8KSH_FAKESH_DATE
   echo 1>&2 "Using date command: $F8KSH_FAKESH_DATE"
