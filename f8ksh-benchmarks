@@ -30,7 +30,7 @@ benchmark() {
 
 setup_shells() (
   mkdir -p /tmp/bboxsh
-  : "{MAKEFLAGS:=-j8}"
+  : "${MAKEFLAGS:=-j8}"
 
   if [ "$_O_busybox_src" ]; then
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=make --busybox-src="$_O_busybox_src" --busybox-config-nofork /tmp/bboxsh/builtin+nofork
@@ -41,15 +41,10 @@ setup_shells() (
   fi
   "$_O_f8ksh_dir"/setup-bbox --clear --busybox=alpine /tmp/bboxsh/links
 
-  cat >/tmp/bboxsh/builtin/zsh-sh <<'EOF'
-#!/bin/sh
-exec zsh --emulate sh "$@"
-EOF
-  cat >/tmp/bboxsh/builtin/bash-sh <<'EOF'
-#!/bin/sh
-exec bash --posix "$@"
-EOF
-chmod a+x /tmp/bboxsh/*/*
+  lnpath() { local p; p=$(command -v "$1" 2>/dev/null || :); ! [ -x "$p" ] || ln -s "$p" "$2"; }
+# lnpath zsh  /tmp/bboxsh/builtin/zsh
+  lnpath bash /tmp/bboxsh/builtin/bash
+  lnpath yash /tmp/bboxsh/builtin/yash
 )
 
 # adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
@@ -182,21 +177,25 @@ benchmark KKPSH=/tmp/bboxsh/builtin+nofork/fakesh.sh PPATH= BMSFX=BBDATE
 benchmark_kak() (
 set --; while IFS= read -r ll; do
   case "$ll" in '#'*) ;; *)
-    (eval "KKRUNCMD=; $ll; ! test -x \$KKPSH") || set -- "$@" "$ll" ;;
+    ! test -x "$(ll=${ll#KKPSH=}; ll=${ll% *}; echo "$ll")" || set -- "$@" "$ll" ;;
   esac
 done <<EOF
 KKPSH=/tmp/bboxsh/builtin/binsh $KKRUNCMD
 #KKPSH=/tmp/bboxsh/builtin/zsh-sh $KKRUNCMD
-#KKPSH=/tmp/bboxsh/builtin/bash-sh $KKRUNCMD
+#KKPSH=/tmp/bboxsh/builtin/bash $KKRUNCMD
+#KKPSH=/tmp/bboxsh/builtin/yash $KKRUNCMD
 KKPSH=/tmp/bboxsh/links/sh PATH="/tmp/bboxsh/links:\$PATH" $KKRUNCMD
 KKPSH=/tmp/bboxsh/links/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin+nofork/sh $KKRUNCMD
 KKPSH=/tmp/bboxsh/builtin+dynld/sh $KKRUNCMD
 EOF
-#printf '%s' "$*"
+#printf '%s\n' "$@"
 hyperfine -w 2 -r $_O_runs -S $_G_static_sh \
-  --export-markdown logs/kak_startup.md --export-csv logs/kak_startup.csv --export-json logs/kak_startup.json "$@"
+  --export-markdown logs/kak_startup.md \
+  --export-csv logs/kak_startup.csv \
+  --export-json logs/kak_startup.json \
+  "$@"
 )
 
 __parse_args "$@"
