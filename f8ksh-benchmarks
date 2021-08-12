@@ -1,11 +1,13 @@
 #!/bin/sh
 set -e; set -u
 
-__which1() {
-  while [ $# -gt 0 ]; do  # TODO: alias
-    ! command -v "$1" 2>/dev/null || return 0; shift
-  done; return 1
-}
+# ignores initial $PWD; everything by default inside MYDIR
+MYDIR=$(dirname -- "${ZSH_ARGZERO:-$0}"); cd "$MYDIR"; MYDIR=$PWD
+if [ ! -r "$MYDIR"/min-template.sh ]; then
+  busybox wget -q 'https://gitlab.com/kstr0k/bashaaparse/-/raw/master/min-template.sh'
+fi
+. "$MYDIR"/min-template.sh
+__which1() { __min_template_util which1 '' "$@"; }
 
 _O_busybox_src=$HOME/src/busybox
 _O_f8ksh_dir=$HOME/src/f8ksh
@@ -47,35 +49,6 @@ setup_shells() (
   lnpath yash /tmp/bboxsh/builtin/yash
 )
 
-# adapted min-template.sh (https://git@gitlab/kstr0k/bashaaparse)
-__usage() {  # args: header footer
-  local flags; flags=$(
-    set | sed -n -e '/^_O_/!d;s/_/-/g;s/^-O-\([[:alnum:]-]*\)=.*/--\1=ARG/p')
-  printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
-  test -z "$flags" || printf '%s\n' "$flags"
-  printf '%s'${2:+'\n'}  "${2:-}"
-}
-__parse_args() {
-  local k
-  test $# -gt 0 || set -- --
-  if ! __process_arg "$@"; then
-    case "$1" in
-      -v) set -x ;;
-      -h|--help|--usage|-'?') __usage 'Options:'; exit 0 ;;
-      --*=*) k=${1%%=*}; k=_O_${k#--}-
-        while :; do case "$k" in
-          *-) k=${k%%-*}_${k#*-} ;;
-           *) eval "${k%_}=\${1#--*=}"; break ;;
-        esac; done ;;
-      --exit) return 0 ;;
-      --no-?*) k=$1; shift; __parse_args "--${k#--no-}=false" "$@"; return ;;
-      --?*)    k=$1; shift; __parse_args "$k=true"            "$@"; return ;;
-      --) shift; __main "$@"; return $? ;;
-      *)         __main "$@"; return $? ;;
-    esac
-  fi
-  shift; __parse_args "$@"
-}
 __process_arg() { return 1; }
 
 benchmark_sh_source() (
